@@ -20,6 +20,7 @@ void NixieDisplay(byte digit)
   // prepare shift register for bit shifting
   digitalWrite(DIN_PIN, 0);
   digitalWrite(CLK_PIN, 0);  
+  delay(1);
   
   // Send data to the nixie driver 
   for (int i = 15; i >= 0; i--)
@@ -27,12 +28,16 @@ void NixieDisplay(byte digit)
     // Set high only the bit that corresponds to the current nixie cathode
     if(i == digit) digitalWrite(DIN_PIN, 1); 
     else digitalWrite(DIN_PIN, 0);
+    delay(1);
     
     // Register shifts bits on upstroke of CLK pin 
     digitalWrite(CLK_PIN, 1);
+
+    delay(1);
     //Set low the data pin after shift to prevent bleed through
     digitalWrite(CLK_PIN, 0);  
   }  
+  delay(1);
 
   // Return the EN pin high to signal chip that it 
   // no longer needs to listen for data
