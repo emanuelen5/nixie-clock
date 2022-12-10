@@ -10,7 +10,8 @@
 #define DIN_PIN   13          // Nixie driver (shift register) serial data input pin             
 #define CLK_PIN   14          // Nixie driver clock input pin
 #define EN_PIN    15          // Nixie driver enable input pin
-#define LED_PIN   2
+#define BTN1_PIN  0
+#define BTN2_PIN  2
 
 void NixieDisplay(byte digit)
 {
@@ -60,19 +61,37 @@ void setup()
   pinMode(EN_PIN, OUTPUT);
   digitalWrite(EN_PIN, LOW);
 
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(BTN1_PIN, INPUT);
+  pinMode(BTN2_PIN, INPUT);
+
+  strip.setBrightness(25);
+  strip.show();
 }
 
 void loop ()
 {
-  uint8_t led_state = 0;
+  static uint8_t btn1_state = 0, btn2_state = 0;
+  uint8_t btn_value;
   for(int i = 0; i <= 9; i++)
   {
     Serial.print("Number: ");
     Serial.println(i);
-    led_state = !led_state;
-    digitalWrite(LED_PIN, led_state);
     NixieDisplay(i);                // Do simple counting
-    delay(100);
+    NixieDisplay(i);                // Do simple counting
+    NixieDisplay(i);                // Do simple counting
+    NixieDisplay(i);                // Do simple counting
+    for (int j = 0; j < 100; j++) {
+      btn_value = digitalRead(BTN1_PIN);
+      if (btn1_state && btn_value != btn1_state) {
+        printf("BTN1 pressed\n");
+      }
+      btn1_state = btn_value;
+      btn_value = digitalRead(BTN2_PIN);
+      if (btn2_state && btn_value != btn2_state) {
+        printf("BTN2 pressed\n");
+      }
+      btn2_state = btn_value;
+      delay(1);
+    }
   }
 }
