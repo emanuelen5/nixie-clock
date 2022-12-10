@@ -6,12 +6,31 @@
 // This example demonstrates how to control a nixie tube.
 // The control is carried out using the Nixie Tube Driver.
 #include <Arduino.h>
+#include <Adafruit_Neopixel.h>
 
 #define DIN_PIN   13          // Nixie driver (shift register) serial data input pin             
 #define CLK_PIN   14          // Nixie driver clock input pin
 #define EN_PIN    15          // Nixie driver enable input pin
 #define BTN1_PIN  0
 #define BTN2_PIN  2
+#define PIXEL_PIN 16
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, PIXEL_PIN, NEO_GRB + NEO_KHZ400);
+
+
+void strip_number(uint8_t v) {
+  uint32_t c;
+  for(uint16_t i = 0; i < strip.numPixels(); i++) {
+    uint8_t bit = i % 3;
+    if ((v >> bit) & 1) {
+      c = strip.Color(0, 255, 0);
+    } else {
+      c = strip.Color(255, 0, 0);
+    }
+    strip.setPixelColor(i, c);
+  }
+  strip.show();
+}
 
 void NixieDisplay(byte digit)
 {
@@ -76,6 +95,7 @@ void loop ()
   {
     Serial.print("Number: ");
     Serial.println(i);
+    strip_number(i);
     NixieDisplay(i);                // Do simple counting
     NixieDisplay(i);                // Do simple counting
     NixieDisplay(i);                // Do simple counting
