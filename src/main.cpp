@@ -7,6 +7,10 @@
 // The control is carried out using the Nixie Tube Driver.
 #include <Arduino.h>
 #include <Adafruit_Neopixel.h>
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+
+#include <secrets.h>
 
 #define DIN_PIN   13          // Nixie driver (shift register) serial data input pin             
 #define CLK_PIN   14          // Nixie driver clock input pin
@@ -16,6 +20,7 @@
 #define PIXEL_PIN 16
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, PIXEL_PIN, NEO_GRB + NEO_KHZ400);
+WiFiClient client;
 
 
 void strip_number(uint8_t v) {
@@ -67,6 +72,23 @@ void NixieDisplay(byte digit)
   digitalWrite(CLK_PIN, 0);        
 }
 
+void printWiFiStatus() {
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print your WiFi shield's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
+  // print the received signal strength:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
+
 void setup() 
 {
   Serial.begin(115200);
@@ -85,12 +107,21 @@ void setup()
 
   strip.setBrightness(25);
   strip.show();
+
+  WiFi.begin(ssid, pass);
+  Serial.println("connecting");
 }
 
 void loop ()
 {
   static uint8_t btn1_state = 0, btn2_state = 0;
   uint8_t btn_value;
+  static wl_status_t connection_status = WL_DISCONNECTED;
+  if (connection_status == WL_DISCONNECTED && WiFi.status() == WL_CONNECTED) {
+    connection_status = WL_CONNECTED;
+    Serial.println("WiFi Connected");
+    printWiFiStatus();
+  }
   for(int i = 0; i <= 9; i++)
   {
     Serial.print("Number: ");
