@@ -105,7 +105,8 @@ void setup()
   pinMode(BTN1_PIN, INPUT);
   pinMode(BTN2_PIN, INPUT);
 
-  strip.setBrightness(25);
+  strip.begin();
+  strip.setBrightness(255);
   strip.show();
 
   WiFi.begin(ssid, pass);
