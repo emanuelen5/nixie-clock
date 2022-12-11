@@ -17,7 +17,7 @@
 #define EN_PIN    15          // Nixie driver enable input pin
 #define BTN1_PIN  0
 #define BTN2_PIN  2
-#define PIXEL_PIN 16
+#define PIXEL_PIN 12 // Pin 16 does not work with Adafruit_NeoPixel!
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, PIXEL_PIN, NEO_GRB + NEO_KHZ400);
 WiFiClient client;
