@@ -11,7 +11,7 @@
 #include <WiFiClient.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
-#include "ESP8266TimerInterrupt.h"
+#include "timer.hpp"
 
 #include <secrets.h>
 
@@ -26,7 +26,11 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, PIXEL_PIN, NEO_GRB + NEO_KHZ400);
 WiFiClient client;
 WiFiUDP ntp_udp;
 NTPClient time_client(ntp_udp);
+
 ESP8266Timer ITimer;
+
+
+#define TIMER_INTERVAL_MS 1000
 
 
 void strip_number(uint8_t v) {
@@ -98,8 +102,6 @@ void printWiFiStatus() {
 
 bool ntp_synced = false;
 unsigned long long int seconds_since_ntp_sync = 0;
-
-#define TIMER_INTERVAL_MS 1000
 void IRAM_ATTR TimerHandler()
 {
   if (ntp_synced)
@@ -129,12 +131,7 @@ void setup()
   WiFi.begin(ssid, pass);
   Serial.println("connecting");
 
-  if (ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 1000, TimerHandler)) {
-    Serial.println(F("Starting  ITimer OK, millis() = "));
-  }
-  else {
-    Serial.println(F("Can't set ITimer correctly. Select another freq. or interval"));
-  }
+  init_timer(&ITimer, &TimerHandler, TIMER_INTERVAL_MS);
 }
 
 void loop ()
