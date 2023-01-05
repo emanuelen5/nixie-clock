@@ -101,11 +101,13 @@ void printWiFiStatus() {
 
 
 bool ntp_synced = false;
+bool timer_triggered = false;
 unsigned long long int seconds_since_ntp_sync = 0;
 void IRAM_ATTR TimerHandler()
 {
   if (ntp_synced)
     seconds_since_ntp_sync += 1;
+  timer_triggered = true;
 }
 
 void setup() 
@@ -134,6 +136,33 @@ void setup()
   init_timer(&ITimer, &TimerHandler, TIMER_INTERVAL_MS);
 }
 
+void
+update_clock_time()
+{
+  uint8_t h = time_client.getHours();
+  uint8_t m = time_client.getMinutes();
+  NixieDisplay(m % 10);
+  NixieDisplay(m / 10);
+  NixieDisplay(h % 10);
+  NixieDisplay(h / 10);
+  Serial.print("Updating time to ");
+  Serial.println(time_client.getFormattedTime());
+}
+
+void
+update_clock_counter()
+{
+  static uint8_t counter = 0;
+  Serial.print("Number: ");
+  Serial.println(counter);
+  strip_number(counter);
+  NixieDisplay(counter);
+  NixieDisplay(counter);
+  NixieDisplay(counter);
+  NixieDisplay(counter);
+  counter = (counter + 1) % 10;
+}
+
 void loop ()
 {
   static uint8_t btn1_state = 0, btn2_state = 0;
@@ -150,38 +179,22 @@ void loop ()
     ntp_synced = true;
   }
 
-  if (ntp_synced) {
-    uint8_t h = time_client.getHours();
-    uint8_t m = time_client.getMinutes();
-    NixieDisplay(m % 10);
-    NixieDisplay(m / 10);
-    NixieDisplay(h % 10);
-    NixieDisplay(h / 10);
-    Serial.print("Updating time to ");
-    Serial.println(time_client.getFormattedTime());
-  } else {
-    for(int i = 0; i <= 9; i++)
-    {
-      Serial.print("Number: ");
-      Serial.println(i);
-      strip_number(i);
-      NixieDisplay(i);                // Do simple counting
-      NixieDisplay(i);                // Do simple counting
-      NixieDisplay(i);                // Do simple counting
-      NixieDisplay(i);                // Do simple counting
-      for (int j = 0; j < 1000; j++) {
-        btn_value = digitalRead(BTN1_PIN);
-        if (btn1_state && btn_value != btn1_state) {
-          printf("BTN1 pressed\n");
-        }
-        btn1_state = btn_value;
-        btn_value = digitalRead(BTN2_PIN);
-        if (btn2_state && btn_value != btn2_state) {
-          printf("BTN2 pressed\n");
-        }
-        btn2_state = btn_value;
-        delay(1);
-      }
-    }
+  if (timer_triggered) {
+    timer_triggered = false;
+    if (ntp_synced)
+      update_clock_time();
+    else
+      update_clock_counter();
   }
+
+  btn_value = digitalRead(BTN1_PIN);
+  if (btn1_state && btn_value != btn1_state) {
+    printf("BTN1 pressed\n");
+  }
+  btn1_state = btn_value;
+  btn_value = digitalRead(BTN2_PIN);
+  if (btn2_state && btn_value != btn2_state) {
+    printf("BTN2 pressed\n");
+  }
+  btn2_state = btn_value;
 }
