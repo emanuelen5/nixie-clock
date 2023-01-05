@@ -12,6 +12,7 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include "timer.hpp"
+#include "button.hpp"
 
 #include <secrets.h>
 
@@ -120,6 +121,8 @@ void IRAM_ATTR TimerHandler()
   timer_triggered = true;
 }
 
+
+button_t btn1, btn2;
 void setup()
 {
   Serial.begin(115200);
@@ -133,8 +136,8 @@ void setup()
   pinMode(EN_PIN, OUTPUT);
   digitalWrite(EN_PIN, LOW);
 
-  pinMode(BTN1_PIN, INPUT);
-  pinMode(BTN2_PIN, INPUT);
+  button_init(&btn1, BTN1_PIN, LOW);
+  button_init(&btn2, BTN2_PIN, LOW);
 
   strip.begin();
   strip.setBrightness(255);
@@ -170,8 +173,6 @@ update_clock_counter()
 
 void loop ()
 {
-  static uint8_t btn1_state = 0, btn2_state = 0;
-  uint8_t btn_value;
   static wl_status_t connection_status = WL_DISCONNECTED;
   if (connection_status == WL_DISCONNECTED && WiFi.status() == WL_CONNECTED) {
     connection_status = WL_CONNECTED;
@@ -192,14 +193,12 @@ void loop ()
       update_clock_counter();
   }
 
-  btn_value = digitalRead(BTN1_PIN);
-  if (btn1_state && btn_value != btn1_state) {
+  button_service(&btn1);
+  button_service(&btn2);
+  if (button_was_pressed(&btn1)) {
     printf("BTN1 pressed\n");
   }
-  btn1_state = btn_value;
-  btn_value = digitalRead(BTN2_PIN);
-  if (btn2_state && btn_value != btn2_state) {
+  if (button_was_pressed(&btn2)) {
     printf("BTN2 pressed\n");
   }
-  btn2_state = btn_value;
 }
