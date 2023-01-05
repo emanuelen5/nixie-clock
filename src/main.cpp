@@ -14,6 +14,7 @@
 #include "timer.hpp"
 #include "button.hpp"
 #include "nixie.hpp"
+#include "wifi.hpp"
 
 #include <secrets.h>
 
@@ -95,6 +96,7 @@ void setup()
 
   WiFi.begin(ssid, pass);
   Serial.println("connecting");
+  wifi_server_init();
 
   init_timer(&ITimer, &TimerHandler, TIMER_INTERVAL_MS);
 }
@@ -142,6 +144,8 @@ void loop ()
     else
       update_clock_counter();
   }
+
+  wifi_server_service();
 
   button_service(&btn1);
   button_service(&btn2);
