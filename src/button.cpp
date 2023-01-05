@@ -15,6 +15,7 @@ button_init(button_t *btn, uint8_t pin, uint8_t on_state)
 uint8_t
 button_service(button_t *btn)
 {
+    assert(btn->_initialized);
     uint8_t value = digitalRead(btn->pin);
     btn->has_changed = btn->has_changed || btn->last_value != value;
     btn->last_value = value;
@@ -24,6 +25,7 @@ button_service(button_t *btn)
 static bool
 button_has_changed(button_t *btn)
 {
+    assert(btn->_initialized);
     uint8_t has_changed = btn->has_changed;
     btn->has_changed = false;
     return has_changed;
@@ -32,6 +34,7 @@ button_has_changed(button_t *btn)
 bool
 button_was_pressed(button_t *btn)
 {
+    assert(btn->_initialized);
     if (!button_has_changed(btn))
         return false;
     

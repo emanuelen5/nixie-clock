@@ -13,6 +13,7 @@
 #include <WiFiUdp.h>
 #include "timer.hpp"
 #include "button.hpp"
+#include "nixie.hpp"
 
 #include <secrets.h>
 
@@ -48,51 +49,6 @@ void strip_number(uint8_t v) {
   strip.show();
 }
 
-void
-_nixie_digit(byte digit)
-{
-  // Send data to the nixie driver
-  for (int i = 15; i >= 0; i--)
-  {
-    // Set high only the bit that corresponds to the current nixie cathode
-    if(i == digit) digitalWrite(DIN_PIN, 1);
-    else digitalWrite(DIN_PIN, 0);
-    delayMicroseconds(1);
-
-    // Register shifts bits on upstroke of CLK pin
-    digitalWrite(CLK_PIN, 1);
-
-    delayMicroseconds(1);
-    //Set low the data pin after shift to prevent bleed through
-    digitalWrite(CLK_PIN, 0);
-  }
-}
-
-void nixie_display_number(byte n1, byte n2, byte n3, byte n4)
-{
-  // Ground EN pin and hold low for as long as you are transmitting
-  digitalWrite(EN_PIN, 0);
-  // Clear everything out just in case to
-  // prepare shift register for bit shifting
-  digitalWrite(DIN_PIN, 0);
-  digitalWrite(CLK_PIN, 0);
-  delayMicroseconds(1);
-
-  delayMicroseconds(1);
-
-  _nixie_digit(n4);
-  _nixie_digit(n3);
-  _nixie_digit(n2);
-  _nixie_digit(n1);
-
-  // Return the EN pin high to signal chip that it
-  // no longer needs to listen for data
-  digitalWrite(EN_PIN, 1);
-
-  // Stop shifting
-  digitalWrite(CLK_PIN, 0);
-}
-
 void printWiFiStatus() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");
@@ -123,19 +79,13 @@ void IRAM_ATTR TimerHandler()
 
 
 button_t btn1, btn2;
+nixie_t nixie;
 void setup()
 {
   Serial.begin(115200);
   Serial.println("Starting");
-  pinMode(DIN_PIN, OUTPUT);
-  digitalWrite(DIN_PIN, LOW);
 
-  pinMode(CLK_PIN, OUTPUT);
-  digitalWrite(CLK_PIN, LOW);
-
-  pinMode(EN_PIN, OUTPUT);
-  digitalWrite(EN_PIN, LOW);
-
+  nixie_init(&nixie, CLK_PIN, DIN_PIN, EN_PIN);
   button_init(&btn1, BTN1_PIN, LOW);
   button_init(&btn2, BTN2_PIN, LOW);
 
@@ -155,7 +105,7 @@ update_clock_time()
 {
   uint8_t h = time_client.getHours();
   uint8_t m = time_client.getMinutes();
-  nixie_display_number(h / 10, h % 10, m / 10, m % 10);
+  nixie_display_number(&nixie, h / 10, h % 10, m / 10, m % 10);
   Serial.print("Updating time to ");
   Serial.println(time_client.getFormattedTime());
 }
@@ -167,7 +117,7 @@ update_clock_counter()
   Serial.print("Number: ");
   Serial.println(counter);
   strip_number(counter);
-  nixie_display_number(counter, counter, counter, counter);
+  nixie_display_number(&nixie, counter, counter, counter, counter);
   counter = (counter + 1) % 10;
 }
 
