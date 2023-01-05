@@ -15,7 +15,7 @@
 
 #include <secrets.h>
 
-#define DIN_PIN   13          // Nixie driver (shift register) serial data input pin             
+#define DIN_PIN   13          // Nixie driver (shift register) serial data input pin
 #define CLK_PIN   14          // Nixie driver clock input pin
 #define EN_PIN    15          // Nixie driver enable input pin
 #define BTN1_PIN  0
@@ -47,39 +47,49 @@ void strip_number(uint8_t v) {
   strip.show();
 }
 
-void NixieDisplay(byte digit)
+void
+_nixie_digit(byte digit)
 {
-  // Ground EN pin and hold low for as long as you are transmitting
-  digitalWrite(EN_PIN, 0); 
-  // Clear everything out just in case to
-  // prepare shift register for bit shifting
-  digitalWrite(DIN_PIN, 0);
-  digitalWrite(CLK_PIN, 0);  
-  delayMicroseconds(1);
-  
-  // Send data to the nixie driver 
+  // Send data to the nixie driver
   for (int i = 15; i >= 0; i--)
   {
     // Set high only the bit that corresponds to the current nixie cathode
-    if(i == digit) digitalWrite(DIN_PIN, 1); 
+    if(i == digit) digitalWrite(DIN_PIN, 1);
     else digitalWrite(DIN_PIN, 0);
     delayMicroseconds(1);
-    
-    // Register shifts bits on upstroke of CLK pin 
+
+    // Register shifts bits on upstroke of CLK pin
     digitalWrite(CLK_PIN, 1);
 
     delayMicroseconds(1);
     //Set low the data pin after shift to prevent bleed through
-    digitalWrite(CLK_PIN, 0);  
-  }  
+    digitalWrite(CLK_PIN, 0);
+  }
+}
+
+void nixie_display_number(byte n1, byte n2, byte n3, byte n4)
+{
+  // Ground EN pin and hold low for as long as you are transmitting
+  digitalWrite(EN_PIN, 0);
+  // Clear everything out just in case to
+  // prepare shift register for bit shifting
+  digitalWrite(DIN_PIN, 0);
+  digitalWrite(CLK_PIN, 0);
   delayMicroseconds(1);
 
-  // Return the EN pin high to signal chip that it 
+  delayMicroseconds(1);
+
+  _nixie_digit(n4);
+  _nixie_digit(n3);
+  _nixie_digit(n2);
+  _nixie_digit(n1);
+
+  // Return the EN pin high to signal chip that it
   // no longer needs to listen for data
   digitalWrite(EN_PIN, 1);
-    
+
   // Stop shifting
-  digitalWrite(CLK_PIN, 0);        
+  digitalWrite(CLK_PIN, 0);
 }
 
 void printWiFiStatus() {
@@ -110,16 +120,16 @@ void IRAM_ATTR TimerHandler()
   timer_triggered = true;
 }
 
-void setup() 
+void setup()
 {
   Serial.begin(115200);
   Serial.println("Starting");
   pinMode(DIN_PIN, OUTPUT);
-  digitalWrite(DIN_PIN, LOW);    
-    
+  digitalWrite(DIN_PIN, LOW);
+
   pinMode(CLK_PIN, OUTPUT);
-  digitalWrite(CLK_PIN, LOW);         
-  
+  digitalWrite(CLK_PIN, LOW);
+
   pinMode(EN_PIN, OUTPUT);
   digitalWrite(EN_PIN, LOW);
 
@@ -136,15 +146,13 @@ void setup()
   init_timer(&ITimer, &TimerHandler, TIMER_INTERVAL_MS);
 }
 
+
 void
 update_clock_time()
 {
   uint8_t h = time_client.getHours();
   uint8_t m = time_client.getMinutes();
-  NixieDisplay(m % 10);
-  NixieDisplay(m / 10);
-  NixieDisplay(h % 10);
-  NixieDisplay(h / 10);
+  nixie_display_number(h / 10, h % 10, m / 10, m % 10);
   Serial.print("Updating time to ");
   Serial.println(time_client.getFormattedTime());
 }
@@ -156,10 +164,7 @@ update_clock_counter()
   Serial.print("Number: ");
   Serial.println(counter);
   strip_number(counter);
-  NixieDisplay(counter);
-  NixieDisplay(counter);
-  NixieDisplay(counter);
-  NixieDisplay(counter);
+  nixie_display_number(counter, counter, counter, counter);
   counter = (counter + 1) % 10;
 }
 
