@@ -70,7 +70,7 @@ void printWiFiStatus() {
 bool ntp_synced = false;
 bool timer_triggered = false;
 unsigned long long int seconds_since_ntp_sync = 0;
-void IRAM_ATTR TimerHandler()
+void IRAM_ATTR tick_handler()
 {
   if (ntp_synced)
     seconds_since_ntp_sync += 1;
@@ -96,7 +96,7 @@ void setup()
   WiFi.begin(ssid, pass);
   Serial.println("connecting");
 
-  init_timer(&ITimer, &TimerHandler, TIMER_INTERVAL_MS);
+  set_timer(&ITimer, &tick_handler, TIMER_INTERVAL_MS);
 }
 
 
