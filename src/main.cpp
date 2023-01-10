@@ -11,6 +11,12 @@
 #include <WiFiClient.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
+
+// For WiFi Manager
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h>
+
 #include "timer.hpp"
 #include "button.hpp"
 #include "nixie.hpp"
@@ -49,7 +55,18 @@ void strip_number(uint8_t v) {
   strip.show();
 }
 
-void printWiFiStatus() {
+
+void
+strip_fill(uint32_t color)
+{
+  for (int i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, color);
+  }
+  strip.show();
+}
+
+
+void print_wifi_status() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");
   Serial.println(WiFi.SSID());
@@ -64,6 +81,24 @@ void printWiFiStatus() {
   Serial.print("signal strength (RSSI):");
   Serial.print(rssi);
   Serial.println(" dBm");
+}
+
+
+static bool blink_on = false;
+void IRAM_ATTR blink_strip()
+{
+  if (blink_on) {
+    strip_fill(strip.Color(255, 255, 255));
+  } else {
+    strip_fill(strip.Color(0, 0, 0));
+  }
+  strip.show();
+  blink_on = ! blink_on;
+}
+
+void config_mode_callback(WiFiManager *wifi_manager) {
+  strip.setBrightness(10);
+  set_timer(&ITimer, &blink_strip, TIMER_INTERVAL_MS);
 }
 
 
@@ -85,15 +120,21 @@ void setup()
   Serial.begin(115200);
   Serial.println("Starting");
 
+  strip.begin();
+  strip.show();
+
+  WiFiManager wifiManager;
+  wifiManager.setAPCallback(config_mode_callback);
+  if (!wifiManager.autoConnect("Emaus Nixie clock")) {
+    Serial.println("Failed to connect and hit timeout");
+  }
+
+  strip.setBrightness(255);
+
   nixie_init(&nixie, CLK_PIN, DIN_PIN, EN_PIN);
   button_init(&btn1, BTN1_PIN, LOW);
   button_init(&btn2, BTN2_PIN, LOW);
 
-  strip.begin();
-  strip.setBrightness(255);
-  strip.show();
-
-  WiFi.begin(ssid, pass);
   Serial.println("connecting");
 
   set_timer(&ITimer, &tick_handler, TIMER_INTERVAL_MS);
@@ -127,7 +168,8 @@ void loop ()
   if (connection_status == WL_DISCONNECTED && WiFi.status() == WL_CONNECTED) {
     connection_status = WL_CONNECTED;
     Serial.println("WiFi Connected");
-    printWiFiStatus();
+    strip_fill(strip.Color(255, 30, 5));
+    print_wifi_status();
     time_client.begin();
     time_client.update();
     Serial.print("Current time: ");
