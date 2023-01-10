@@ -34,11 +34,14 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, PIXEL_PIN, NEO_GRB + NEO_KHZ400);
 WiFiClient client;
 WiFiUDP ntp_udp;
 NTPClient time_client(ntp_udp);
+ESP8266Timer timer;
+button_t btn1, btn2;
+nixie_t nixie;
 
-ESP8266Timer ITimer;
 
-
-#define TIMER_INTERVAL_MS 1000
+#define SECONDS_PER_HOUR 3600
+#define MS_PER_SECOND 1000
+#define TIMER_INTERVAL_MS (1 * MS_PER_SECOND)
 
 
 void strip_number(uint8_t v) {
@@ -67,19 +70,13 @@ strip_fill(uint32_t color)
 
 
 void print_wifi_status() {
-  // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
+  Serial.println("WiFi connection details:");
+  Serial.print("- SSID: ");
   Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.print(rssi);
+  Serial.print("- IP Address: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("- Signal strength (RSSI): ");
+  Serial.print(WiFi.RSSI());
   Serial.println(" dBm");
 }
 
@@ -97,35 +94,37 @@ void IRAM_ATTR blink_strip()
 }
 
 void config_mode_callback(WiFiManager *wifi_manager) {
+  Serial.println("WiFi Manager entered config mode");
+  Serial.print("- IP: ");
+  Serial.println(WiFi.softAPIP());
+  Serial.print("- SSID: ");
+  Serial.println(wifi_manager->getConfigPortalSSID());
+
   strip.setBrightness(10);
-  set_timer(&ITimer, &blink_strip, TIMER_INTERVAL_MS);
+  set_timer(&timer, &blink_strip, TIMER_INTERVAL_MS);
 }
 
 
-bool ntp_synced = false;
 bool timer_triggered = false;
-unsigned long long int seconds_since_ntp_sync = 0;
 void IRAM_ATTR tick_handler()
 {
-  if (ntp_synced)
-    seconds_since_ntp_sync += 1;
   timer_triggered = true;
 }
 
 
-button_t btn1, btn2;
-nixie_t nixie;
 void setup()
 {
   Serial.begin(115200);
   Serial.println("Starting");
 
   strip.begin();
+  strip_fill(strip.Color(0, 10, 50));
   strip.show();
 
-  WiFiManager wifiManager;
-  wifiManager.setAPCallback(config_mode_callback);
-  if (!wifiManager.autoConnect("Emaus Nixie clock")) {
+  WiFiManager wifi_manager;
+  wifi_manager.setDebugOutput(false);
+  wifi_manager.setAPCallback(config_mode_callback);
+  if (!wifi_manager.autoConnect("Emaus Nixie clock")) {
     Serial.println("Failed to connect and hit timeout");
   }
 
@@ -137,7 +136,10 @@ void setup()
 
   Serial.println("connecting");
 
-  set_timer(&ITimer, &tick_handler, TIMER_INTERVAL_MS);
+  set_timer(&timer, &tick_handler, TIMER_INTERVAL_MS);
+  time_client.begin();
+  time_client.setTimeOffset(1 * SECONDS_PER_HOUR);
+  time_client.setUpdateInterval(60 * MS_PER_SECOND);
 }
 
 
@@ -151,6 +153,7 @@ update_clock_time()
   Serial.println(time_client.getFormattedTime());
 }
 
+
 void
 update_clock_counter()
 {
@@ -162,7 +165,9 @@ update_clock_counter()
   counter = (counter + 1) % 10;
 }
 
-void loop ()
+
+void
+loop()
 {
   static wl_status_t connection_status = WL_DISCONNECTED;
   if (connection_status == WL_DISCONNECTED && WiFi.status() == WL_CONNECTED) {
@@ -170,16 +175,16 @@ void loop ()
     Serial.println("WiFi Connected");
     strip_fill(strip.Color(255, 30, 5));
     print_wifi_status();
-    time_client.begin();
-    time_client.update();
-    Serial.print("Current time: ");
+  }
+
+  if (WiFi.status() == WL_CONNECTED && time_client.update()) {
+    Serial.print("Time synchronized: ");
     Serial.println(time_client.getFormattedTime());
-    ntp_synced = true;
   }
 
   if (timer_triggered) {
     timer_triggered = false;
-    if (ntp_synced)
+    if (time_client.isTimeSet())
       update_clock_time();
     else
       update_clock_counter();
