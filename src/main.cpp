@@ -32,7 +32,6 @@
 #define PIXEL_PIN 12 // Pin 16 does not work with Adafruit_NeoPixel!
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, PIXEL_PIN, NEO_GRB + NEO_KHZ400);
-WiFiClient client;
 WiFiUDP ntp_udp;
 NTPClient time_client(ntp_udp);
 ESP8266Timer timer;

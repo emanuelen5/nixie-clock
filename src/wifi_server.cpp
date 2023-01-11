@@ -55,27 +55,31 @@ respond(WiFiClient &client, int status, String &html)
 }
 
 
+static WiFiClient client;
+static bool was_connected = false;
+
 void
 wifi_server_service() {
     assert(initialized);
-    WiFiClient client = server.available();
-    if (!client)
+
+    client = server.available();
+    bool is_connected = client.connected();
+    if (!is_connected && !was_connected) {
         return;
-
-    Serial.println("New WiFi client");
-
-    String html = "<!DOCTYPE html><html><body>"
-        "<h1>HEJ</h1>"
-        "</body></html>";
-    respond(client, 200, html);
-
-    while (client.connected()) {
+    } else if (is_connected && !was_connected) {
+        Serial.println("New WiFi client");
+        start_time = millis();
+        String html = "<!DOCTYPE html><html><body>"
+            "<h1>HEJ</h1>"
+            "</body></html>";
+        respond(client, 200, html);
+    } else if (is_connected && was_connected || !is_connected) {
+        Serial.println("Checking for timeout");
         if ((millis() - start_time) >= timeout_time) {
             Serial.println("WiFi Timeout");
-            break;
+            client.stop();
         }
     }
 
-    client.stop();
-    Serial.println("WiFi client disconnected");
+    was_connected = client.connected();
 }
