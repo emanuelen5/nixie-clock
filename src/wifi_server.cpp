@@ -55,14 +55,14 @@ respond(WiFiClient &client, int status, String &html)
 }
 
 
-static WiFiClient client;
 static bool was_connected = false;
+
 
 void
 wifi_server_service() {
     assert(initialized);
 
-    client = server.available();
+    WiFiClient client = server.available();
     bool is_connected = client.connected();
     if (!is_connected && !was_connected) {
         return;

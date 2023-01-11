@@ -22,8 +22,6 @@
 #include "nixie.hpp"
 #include "wifi_server.hpp"
 
-#include <secrets.h>
-
 #define DIN_PIN   13          // Nixie driver (shift register) serial data input pin
 #define CLK_PIN   14          // Nixie driver clock input pin
 #define EN_PIN    15          // Nixie driver enable input pin
@@ -121,20 +119,32 @@ void setup()
   strip_fill(strip.Color(0, 10, 50));
   strip.show();
 
+  nixie_init(&nixie, CLK_PIN, DIN_PIN, EN_PIN);
+  for (int i = 0; i < 50; i++) {
+    int j = i % 10;
+    nixie_display_number(&nixie, j, j, j, j);
+    delay(50);
+  }
+  nixie_display_number(&nixie, -1, -1, -1, -1);
+  button_init(&btn1, BTN1_PIN, LOW);
+  button_init(&btn2, BTN2_PIN, LOW);
+
   WiFiManager wifi_manager;
   wifi_manager.setDebugOutput(false);
   wifi_manager.setAPCallback(config_mode_callback);
+
+  button_service(&btn1);
+  button_service(&btn2);
+  if (button_is_pressed(&btn1) && button_is_pressed(&btn2)) {
+    Serial.println("Erasing WiFI configuration.");
+    wifi_manager.erase();
+  }
+
   if (!wifi_manager.autoConnect("Emaus Nixie clock")) {
     Serial.println("Failed to connect and hit timeout");
   }
 
   strip.setBrightness(255);
-
-  nixie_init(&nixie, CLK_PIN, DIN_PIN, EN_PIN);
-  button_init(&btn1, BTN1_PIN, LOW);
-  button_init(&btn2, BTN2_PIN, LOW);
-
-  Serial.println("connecting");
   wifi_server_init();
 
   set_timer(&timer, &tick_handler, TIMER_INTERVAL_MS);

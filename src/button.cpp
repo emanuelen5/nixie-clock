@@ -32,11 +32,18 @@ button_has_changed(button_t *btn)
 }
 
 bool
+button_is_pressed(button_t *btn)
+{
+    assert(btn->_initialized);
+    return btn->last_value == btn->press_state;
+}
+
+bool
 button_was_pressed(button_t *btn)
 {
     assert(btn->_initialized);
     if (!button_has_changed(btn))
         return false;
     
-    return btn->last_value == btn->press_state;
+    return button_is_pressed(btn);
 }

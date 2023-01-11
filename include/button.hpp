@@ -9,4 +9,5 @@ typedef struct button {
 
 void button_init(button_t *btn, uint8_t pin, uint8_t on_state);
 uint8_t button_service(button_t *btn);
+bool button_is_pressed(button_t *btn);
 bool button_was_pressed(button_t *btn);
