@@ -20,7 +20,7 @@
 #include "timer.hpp"
 #include "button.hpp"
 #include "nixie.hpp"
-#include "wifi.hpp"
+#include "wifi_server.hpp"
 
 #include <secrets.h>
 
